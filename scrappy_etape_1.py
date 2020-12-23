@@ -61,8 +61,13 @@ if response.ok:
         product_gallery.find('img')["src"]
 
     # Récupérer category (breadcrumbs : dernier li avant class active)
+    breadcrumb = soup.find('ul', {"class": "breadcrumb"})
+    links = soup.select('li:not(.active)')
+    product_informations["category"] = links[len(links) - 1].text
+
     # Récupérer title (titre H1)
     product_informations['title'] = soup.find('h1').text
+
     # Récupérer description (id product_description + selecteur css frère tag p)
     # Récupérer review_rating (class star-rating + class indiquant le nombre d'étoile)
 
