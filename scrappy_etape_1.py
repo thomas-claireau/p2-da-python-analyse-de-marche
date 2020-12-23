@@ -69,6 +69,10 @@ if response.ok:
     product_informations['title'] = soup.find('h1').text
 
     # Récupérer description (id product_description + selecteur css frère tag p)
+    description = soup.find('div', {"id": 'product_description'})
+    product_informations["product_description"] = description.findNext(
+        'p').text
+
     # Récupérer review_rating (class star-rating + class indiquant le nombre d'étoile)
 
 # print(product_informations)
