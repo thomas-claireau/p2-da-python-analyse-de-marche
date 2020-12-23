@@ -56,11 +56,14 @@ if response.ok:
         product_informations[target_dict] = information_value
 
     # Récupérer image_url (id product_gallery)
-    product_informations['title'] = soup.find('h1').text
+    product_gallery = soup.find("div", {"id": "product_gallery"})
+    product_informations["image_url"] = "http://books.toscrape.com/" + \
+        product_gallery.find('img')["src"]
 
     # Récupérer category (breadcrumbs : dernier li avant class active)
     # Récupérer title (titre H1)
+    product_informations['title'] = soup.find('h1').text
     # Récupérer description (id product_description + selecteur css frère tag p)
     # Récupérer review_rating (class star-rating + class indiquant le nombre d'étoile)
 
-print(product_informations)
+# print(product_informations)
