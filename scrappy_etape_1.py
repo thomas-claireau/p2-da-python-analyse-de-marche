@@ -56,6 +56,8 @@ if response.ok:
         product_informations[target_dict] = information_value
 
     # Récupérer image_url (id product_gallery)
+    product_informations['title'] = soup.find('h1').text
+
     # Récupérer category (breadcrumbs : dernier li avant class active)
     # Récupérer title (titre H1)
     # Récupérer description (id product_description + selecteur css frère tag p)
