@@ -9,7 +9,7 @@
 # number_available
 # product_description OK
 # category OK
-# review_rating
+# review_rating OK
 # image_url OK
 
 # Insérer les nouvelles données dans un CSV
@@ -72,6 +72,24 @@ if response.ok:
         'p').text
 
     # Récupérer review_rating (class star-rating + class indiquant le nombre d'étoile)
+    review_rating = soup.find('p', {"class": "star-rating"})
+    if review_rating.has_attr('class'):
+        review_rating = review_rating["class"][1]
+
+        if review_rating == "One":
+            review_rating = 1
+        elif review_rating == "Two":
+            review_rating = 2
+        elif review_rating == "Three":
+            review_rating = 3
+        elif review_rating == "Four":
+            review_rating = 4
+        elif review_rating == "Five":
+            review_rating = 5
+        else:
+            review_rating = 0
+    else:
+        review_rating = 0
 
     # Récupérer number_availability (instock outofstock en dessous du prix du produit)
     availability = soup.select('p.availability.instock')
@@ -85,5 +103,3 @@ if response.ok:
         product_informations["number_availability"] = availability
     else:
         product_informations["number_availability"] = 0
-
-# print(product_informations)
