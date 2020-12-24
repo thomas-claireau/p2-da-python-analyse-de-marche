@@ -18,13 +18,6 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 
-
-class Product:
-    def __init__(self, **product_informations):
-        for information_name, information_value in product_informations.items():
-            setattr(self, information_name, information_value)
-
-
 product_informations = {
     "product_page_url": "http://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html"}
 
@@ -62,7 +55,7 @@ if response.ok:
 
     # Récupérer category (breadcrumbs : dernier li avant class active)
     breadcrumb = soup.find('ul', {"class": "breadcrumb"})
-    links = soup.select('li:not(.active)')
+    links = breadcrumb.select('li:not(.active)')
     product_informations["category"] = links[len(links) - 1].text.strip()
 
     # Récupérer title (titre H1)
