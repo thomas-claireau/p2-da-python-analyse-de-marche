@@ -8,21 +8,61 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+import time
 
 category_url = "http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html"
 
-response = requests.get(category_url)
 
-if response.ok:
-    soup = BeautifulSoup(response.text, 'html.parser')
+def scrappy_products_category(soup):
+    links = []
 
     products = soup.select('article.product_pod')
-    links = []
+
     for product in products:
         href = product.find('a')["href"]
         href = href.split('/')
         links.append("http://books.toscrape.com/catalogue/" +
                      href[-2] + "/" + href[-1])
+
+    return links
+
+
+def find_products_url_by_category(url_categ):
+    # produit par page : 20
+    response = requests.get(url_categ)
+    links = []
+
+    if response.ok:
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        is_pagination = soup.find("ul", {"class": "pager"})
+
+        if is_pagination:
+            nbPages = is_pagination.find(
+                'li', {"class": "current"}).text.strip()
+            nbPages = int(nbPages[-1:])
+
+            if nbPages:
+                for i in range(1, nbPages + 1):
+                    url = url_categ.replace(
+                        'index.html', 'page-' + str(i) + '.html')
+
+                    response = requests.get(url)
+
+                    if (response.ok):
+                        soup = BeautifulSoup(response.text, 'html.parser')
+
+                        links += scrappy_products_category(soup)
+
+                    # Eviter l'IP blacklistée
+                    time.sleep(3)
+            else:
+                links = scrappy_products_category(soup)
+
+    return links
+
+
+find_products_url_by_category(category_url)
 
 
 def scrappy_product(url):
