@@ -16,6 +16,7 @@
 
 import requests
 from bs4 import BeautifulSoup
+import csv
 
 
 class Product:
@@ -39,19 +40,20 @@ if response.ok:
         information_label = information.find('th').text
         information_value = information.find('td').text
 
-        target_dict = ""
+        target_dict = False
 
         if (information_label == "UPC"):
             target_dict = "universal_product_code"
-        if (information_label == "Price (excl. tax)"):
+        elif (information_label == "Price (excl. tax)"):
             target_dict = "price_excluding_tax"
-        if (information_label == "Price (incl. tax)"):
+        elif (information_label == "Price (incl. tax)"):
             target_dict = "price_including_tax"
 
-        if "Â" in information_value:
-            information_value = information_value.replace("Â", "")
+        if target_dict:
+            if "Â" in information_value:
+                information_value = information_value.replace("Â", "")
 
-        product_informations[target_dict] = information_value
+            product_informations[target_dict] = information_value
 
     # Récupérer image_url (id product_gallery)
     product_gallery = soup.find("div", {"id": "product_gallery"})
@@ -61,7 +63,7 @@ if response.ok:
     # Récupérer category (breadcrumbs : dernier li avant class active)
     breadcrumb = soup.find('ul', {"class": "breadcrumb"})
     links = soup.select('li:not(.active)')
-    product_informations["category"] = links[len(links) - 1].text
+    product_informations["category"] = links[len(links) - 1].text.strip()
 
     # Récupérer title (titre H1)
     product_informations['title'] = soup.find('h1').text
@@ -91,7 +93,9 @@ if response.ok:
     else:
         review_rating = 0
 
-    # Récupérer number_availability (instock outofstock en dessous du prix du produit)
+    product_informations['review_rating'] = review_rating
+
+    # Récupérer number_available (instock outofstock en dessous du prix du produit)
     availability = soup.select('p.availability.instock')
 
     if availability:
@@ -100,6 +104,16 @@ if response.ok:
         availability = availability.replace(' available)', '')
         availability = int(availability)
 
-        product_informations["number_availability"] = availability
+        product_informations["number_available"] = availability
     else:
-        product_informations["number_availability"] = 0
+        product_informations["number_available"] = 0
+
+# Ecriture fichier csv
+with open('./scrappy_etape_1.csv', 'w') as file:
+    writer = csv.writer(file)
+
+    # En têtes
+    writer.writerow(product_informations.keys())
+
+    # Values
+    writer.writerow(product_informations.values())
