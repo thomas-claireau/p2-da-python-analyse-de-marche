@@ -1,16 +1,22 @@
-# Etape 2 : scrapper une catégorie de produit
+# Etape 3 : scrapper le site Books To Scrape
 
-# consulter la page de catégorie choisie
+# récupérer toutes les catégories
+# créer un dossier et ensuite un fichier csv distinct pour chaque catégorie
+# consulter la page de chaque catégorie
 # extrait l'url de chaque produit
 # extrais les informations produits (étape 1)
 # Insérer les nouvelles données dans un CSV
 
+import random
 import requests
 from bs4 import BeautifulSoup
+from pathlib import Path
 import csv
 import time
+from slugify import slugify
 
-TIME_TO_SLEEP = 1
+MIN_SLEEP = 0.1
+MAX_SLEEP = 2
 
 
 def progressBar(iterable, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
@@ -75,7 +81,7 @@ def find_products_url_by_category(url_categ):
             nbPages = int(nbPages[-1:])
 
             if nbPages:
-                for i in progressBar(range(1, nbPages + 1), prefix='Scrap Categs:', suffix='Complete', length=50):
+                for i in range(1, nbPages + 1):
                     url = url_categ.replace(
                         'index.html', 'page-' + str(i) + '.html')
 
@@ -87,9 +93,8 @@ def find_products_url_by_category(url_categ):
                         links += scrappy_products_category(soup)
 
                     # Eviter l'IP blacklistée
-                    time.sleep(TIME_TO_SLEEP)
+                    time.sleep(random.uniform(MIN_SLEEP, MAX_SLEEP))
         else:
-            print("scrapping of category url : " + url_categ)
             links = scrappy_products_category(soup)
 
     return links
@@ -141,8 +146,10 @@ def scrappy_product(url):
 
         # Récupérer description (id product_description + selecteur css frère tag p)
         description = soup.find('div', {"id": 'product_description'})
-        product_informations["product_description"] = description.findNext(
-            'p').text
+
+        if description:
+            product_informations["product_description"] = description.findNext(
+                'p').text
 
         # Récupérer review_rating (class star-rating + class indiquant le nombre d'étoile)
         review_rating = soup.find('p', {"class": "star-rating"})
@@ -182,24 +189,43 @@ def scrappy_product(url):
     return product_informations
 
 
-category_url = "http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html"
-links = find_products_url_by_category(category_url)
+categories = []
+response = requests.get('http://books.toscrape.com/')
 
-if links:
-    products_informations = []
-    for url in progressBar(links, prefix='Scrap Products:', suffix='Complete', length=50):
-        products_informations.append(scrappy_product(url))
+if (response.ok):
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Eviter l'IP blacklistée
-        time.sleep(TIME_TO_SLEEP)
+    # Récupérer toutes les catégories
+    for categorie in soup.select('.side_categories ul > li > a'):
+        categories.append(
+            {"name": categorie.text.strip(), "url": "http://books.toscrape.com/" + categorie["href"]})
 
-    # Ecriture fichier csv
-    with open('./scrappy_etape_2.csv', 'w') as file:
-        writer = csv.writer(file)
+    # Create scrappy_etape_3 if not exist
+    Path('./scrappy_etape_3').mkdir(parents=True, exist_ok=True)
 
-        # En têtes
-        writer.writerow(products_informations[0].keys())
+    # Consulter la page de chaque catégorie
+    for categorie in progressBar(categories, prefix='Scrapping Books...:', suffix='Complete', length=50):
+        links = find_products_url_by_category(categorie["url"])
 
-        # Values
-        for product_informations in products_informations:
-            writer.writerow(product_informations.values())
+        # if links:
+        products_informations = []
+
+        for url in links:
+            products_informations.append(scrappy_product(url))
+
+            # Eviter l'IP blacklistée
+            time.sleep(random.uniform(MIN_SLEEP, MAX_SLEEP))
+
+        # Ecriture fichier csv
+        if products_informations:
+            name = slugify(categorie["name"])
+
+            with open('./scrappy_etape_3/' + name + '.csv', 'w') as file:
+                writer = csv.writer(file)
+
+                # En têtes
+                writer.writerow(products_informations[0].keys())
+
+                # Values
+                for product_informations in products_informations:
+                    writer.writerow(product_informations.values())
