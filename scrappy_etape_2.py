@@ -10,7 +10,39 @@ from bs4 import BeautifulSoup
 import csv
 import time
 
-category_url = "http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html"
+TIME_TO_SLEEP = 1
+
+
+def progressBar(iterable, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    total = len(iterable)
+    # Progress Bar Printing Function
+
+    def printProgressBar(iteration):
+        percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                         (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + '-' * (length - filledLength)
+        print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+    # Initial Call
+    printProgressBar(0)
+    # Update Progress Bar
+    for i, item in enumerate(iterable):
+        yield item
+        printProgressBar(i + 1)
+    # Print New Line on Complete
+    print()
 
 
 def scrappy_products_category(soup):
@@ -43,7 +75,7 @@ def find_products_url_by_category(url_categ):
             nbPages = int(nbPages[-1:])
 
             if nbPages:
-                for i in range(1, nbPages + 1):
+                for i in progressBar(range(1, nbPages + 1), prefix='Scrap Categs:', suffix='Complete', length=50):
                     url = url_categ.replace(
                         'index.html', 'page-' + str(i) + '.html')
 
@@ -55,14 +87,12 @@ def find_products_url_by_category(url_categ):
                         links += scrappy_products_category(soup)
 
                     # Eviter l'IP blacklistée
-                    time.sleep(3)
+                    time.sleep(TIME_TO_SLEEP)
             else:
+                print("scrapping of category url : " + url_categ)
                 links = scrappy_products_category(soup)
 
     return links
-
-
-find_products_url_by_category(category_url)
 
 
 def scrappy_product(url):
@@ -151,12 +181,25 @@ def scrappy_product(url):
 
     return product_informations
 
-# Ecriture fichier csv
-# with open('./scrappy_etape_1.csv', 'w') as file:
-#     writer = csv.writer(file)
 
-#     # En têtes
-#     writer.writerow(product_informations.keys())
+category_url = "http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html"
+links = find_products_url_by_category(category_url)
 
-#     # Values
-#     writer.writerow(product_informations.values())
+if links:
+    products_informations = []
+    for url in progressBar(links, prefix='Scrap Products:', suffix='Complete', length=50):
+        products_informations.append(scrappy_product(url))
+
+        # Eviter l'IP blacklistée
+        time.sleep(TIME_TO_SLEEP)
+
+    # Ecriture fichier csv
+    with open('./scrappy_etape_2.csv', 'w') as file:
+        writer = csv.writer(file)
+
+        # En têtes
+        writer.writerow(products_informations[0].keys())
+
+        # Values
+        for product_informations in products_informations:
+            writer.writerow(product_informations.values())
