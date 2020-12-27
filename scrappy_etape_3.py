@@ -7,16 +7,23 @@
 # extrais les informations produits (étape 1)
 # Insérer les nouvelles données dans un CSV
 
+import os
+import stat
 import random
 import requests
 from bs4 import BeautifulSoup
 from pathlib import Path
+import shutil
 import csv
 import time
 from slugify import slugify
 
+# random sleep mode
 MIN_SLEEP = 0.1
 MAX_SLEEP = 2
+
+# remove scrappy_etape_3 before restart
+shutil.rmtree('./scrappy_etape_3', ignore_errors=True)
 
 
 def progressBar(iterable, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
@@ -195,8 +202,8 @@ response = requests.get('http://books.toscrape.com/')
 if (response.ok):
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Récupérer toutes les catégories
-    for categorie in soup.select('.side_categories ul > li > a'):
+    # Récupérer toutes les catégories de livres
+    for categorie in soup.select('.side_categories ul > li > ul > li > a'):
         categories.append(
             {"name": categorie.text.strip(), "url": "http://books.toscrape.com/" + categorie["href"]})
 
@@ -204,17 +211,23 @@ if (response.ok):
     Path('./scrappy_etape_3').mkdir(parents=True, exist_ok=True)
 
     # Consulter la page de chaque catégorie
-    for categorie in progressBar(categories, prefix='Scrapping Books...:', suffix='Complete', length=50):
+    for categorie in progressBar(categories, prefix='Scrapping Books...:', suffix='', length=50):
+        print("Catégorie : " + categorie["name"])
         links = find_products_url_by_category(categorie["url"])
 
         # if links:
         products_informations = []
+        i = 1
 
         for url in links:
             products_informations.append(scrappy_product(url))
 
             # Eviter l'IP blacklistée
             time.sleep(random.uniform(MIN_SLEEP, MAX_SLEEP))
+
+            print(str(i) + " produits scrappés sur " +
+                  str(len(links)) + " produits")
+            i += 1
 
         # Ecriture fichier csv
         if products_informations:
