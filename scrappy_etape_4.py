@@ -1,4 +1,4 @@
-# Etape 3 : scrapper le site Books To Scrape
+# Etape 4 : scrapper le site Books To Scrape
 
 # récupérer toutes les catégories
 # créer un dossier et ensuite un fichier csv distinct pour chaque catégorie

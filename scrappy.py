@@ -1,12 +1,3 @@
-# Etape 3 : scrapper le site Books To Scrape
-
-# récupérer toutes les catégories
-# créer un dossier et ensuite un fichier csv distinct pour chaque catégorie
-# consulter la page de chaque catégorie
-# extrait l'url de chaque produit
-# extrais les informations produits (étape 1)
-# Insérer les nouvelles données dans un CSV
-
 import os
 import stat
 import random
@@ -20,11 +11,11 @@ from slugify import slugify
 import urllib.request
 
 # random sleep mode
-MIN_SLEEP = 0.1
-MAX_SLEEP = 2
+MIN_SLEEP = 1
+MAX_SLEEP = 3
 
-# remove scrappy_etape_4 before restart
-shutil.rmtree('./scrappy_etape_4', ignore_errors=True)
+# remove scrappy before restart
+shutil.rmtree('./scrappy', ignore_errors=True)
 
 
 def progressBar(iterable, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
@@ -202,7 +193,7 @@ def scrappy_product(url, upload_image, slug_categ):
                 '.')[-1]
 
             urllib.request.urlretrieve(
-                image_url, './scrappy_etape_4/' + slug_categ + '/images/' + title + '.' + image_ext)
+                image_url, './scrappy/' + slug_categ + '/images/' + title + '.' + image_ext)
 
     return product_informations
 
@@ -218,18 +209,18 @@ if (response.ok):
         categories.append(
             {"name": categorie.text.strip(), "url": "http://books.toscrape.com/" + categorie["href"]})
 
-    # Create scrappy_etape_4 if not exist
-    Path('./scrappy_etape_4').mkdir(parents=True, exist_ok=True)
+    # Create scrappy if not exist
+    Path('./scrappy').mkdir(parents=True, exist_ok=True)
 
     # Consulter la page de chaque catégorie
     for categorie in progressBar(categories, prefix='Scrapping Books...:', suffix='', length=50):
         name = slugify(categorie["name"])
 
         # create category folder
-        Path('./scrappy_etape_4/' + name).mkdir(parents=True, exist_ok=True)
+        Path('./scrappy/' + name).mkdir(parents=True, exist_ok=True)
 
         # create images folder inside category
-        Path('./scrappy_etape_4/' + name +
+        Path('./scrappy/' + name +
              '/images').mkdir(parents=True, exist_ok=True)
 
         print("Catégorie : " + categorie["name"])
@@ -251,7 +242,7 @@ if (response.ok):
 
         # Ecriture fichier csv
         if products_informations:
-            with open('./scrappy_etape_4/' + name + '/' + name + '.csv', 'w') as file:
+            with open('./scrappy/' + name + '/' + name + '.csv', 'w') as file:
                 writer = csv.writer(file)
 
                 # En têtes
@@ -260,3 +251,9 @@ if (response.ok):
                 # Values
                 for product_informations in products_informations:
                     writer.writerow(product_informations.values())
+
+# zip scrappy folder
+shutil.make_archive("./scrappy", 'zip', "scrappy")
+
+# remove scrappy folder but keep archive
+shutil.rmtree('./scrappy', ignore_errors=True)
